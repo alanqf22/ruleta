@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Selector aleatorio de preguntas</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --border: #e5e7eb;
+      --success: #059669;
+      --danger: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px 0;
+      font-size: 1.9rem;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .primary:hover { background: var(--accent-dark); }
+
+    .secondary {
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+    }
+
+    .danger {
+      background: #fef2f2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .question-box {
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 26px;
+      font-size: 1.35rem;
+      line-height: 1.6;
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      background: #fcfdff;
+      margin-top: 18px;
+    }
+
+    .question-hidden {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .pill {
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.95rem;
+    }
+
+    .list {
+      margin-top: 14px;
+      padding-left: 20px;
+      line-height: 1.6;
+    }
+
+    .list li { margin-bottom: 8px; }
+
+    .success-text { color: var(--success); font-weight: 700; }
+
+    .footer-note {
+      margin-top: 12px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Selector aleatorio de preguntas</h1>
+      <p class="muted">
+        Diseñado para que cada equipo obtenga una pregunta al azar sin conocerla previamente.
+        Puedes renovar el orden completo entre equipos para que la secuencia cambie.
+      </p>
+
+      <div class="controls">
+        <button class="primary" id="drawBtn">Sacar pregunta</button>
+        <button class="secondary" id="shuffleBtn">Actualizar orden</button>
+        <button class="secondary" id="showCountBtn">Mostrar cuántas faltan</button>
+        <button class="danger" id="resetBtn">Reiniciar todo</button>
+      </div>
+
+      <div class="question-box" id="questionBox">
+        <span class="question-hidden">La pregunta aparecerá aquí cuando presiones “Sacar pregunta”.</span>
+      </div>
+
+      <div class="status">
+        <div class="pill" id="currentStatus">Pregunta actual: ninguna</div>
+        <div class="pill" id="remainingStatus">Disponibles: 20</div>
+        <div class="pill" id="usedStatus">Usadas: 0</div>
+      </div>
+
+      <p class="footer-note">
+        “Actualizar orden” vuelve a mezclar únicamente las preguntas que aún no han salido.
+      </p>
+    </div>
+
+    <div class="card">
+      <p><strong>Preguntas ya utilizadas en esta ronda:</strong></p>
+      <ol class="list" id="usedList"></ol>
+      <p id="emptyUsed" class="muted">Todavía no se ha usado ninguna pregunta.</p>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      "¿Qué representa cada término en la ecuación de Van der Waals?",
+      "Desde el punto de vista matemático, ¿por qué la ecuación de Van der Waals no es lineal en v?",
+      "¿Qué ocurre físicamente cuando v → b? ¿Por qué esta región resulta problemática tanto física como numéricamente?",
+      "¿Por qué es necesario expresar la ecuación en la forma f(v)=0 para aplicar el método de Newton-Raphson? ¿Qué limitación tendría trabajarla directamente como P(v)?",
+      "¿Cuál es la interpretación física de la raíz de f(v) en este problema?",
+      "¿Qué efecto tiene una presión muy alta sobre la forma de la gráfica de f(v)?",
+      "Demuestra matemáticamente la derivada utilizada en el código",
+      "¿Qué efecto tiene el incremento de la temperatura sobre la gráfica de f(v) y sobre la raíz de la ecuación?",
+      "¿Cómo se puede identificar visualmente si el método de Newton-Raphson está convergiendo?",
+      "¿Cuál es la interpretación geométrica de cada iteración en el método de Newton-Raphson?",
+      "Menciona al menos dos condiciones necesarias para que el método de Newton-Raphson funcione adecuadamente.",
+      "¿Qué ocurre si la derivada de la función es cero o muy cercana a cero en algún punto?",
+      "¿Por qué es importante elegir un valor inicial adecuado en el método de Newton-Raphson?",
+      "¿Qué problemas pueden surgir si el valor inicial de 'v' es cercano a 'b'?",
+      "¿Por qué es necesario evitar el valor v=0 en la implementación computacional?",
+      "¿Cómo debe reaccionar el algoritmo si encuentra una derivada muy pequeña durante las iteraciones?",
+      "En el código, ¿por qué se selecciona un rango específico de valores de v al momento de graficar la función?",
+      "¿Qué parámetro de la ecuación de Van der Waals controla principalmente la curvatura de la función?",
+    ];
+
+    let available = [];
+    let used = [];
+    let currentQuestion = null;
+
+    const questionBox = document.getElementById('questionBox');
+    const currentStatus = document.getElementById('currentStatus');
+    const remainingStatus = document.getElementById('remainingStatus');
+    const usedStatus = document.getElementById('usedStatus');
+    const usedList = document.getElementById('usedList');
+    const emptyUsed = document.getElementById('emptyUsed');
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    function initialize() {
+      available = [...questions];
+      used = [];
+      currentQuestion = null;
+      shuffleArray(available);
+      render();
+    }
+
+    function render() {
+      if (currentQuestion) {
+        questionBox.innerHTML = `<div>${currentQuestion}</div>`;
+        currentStatus.textContent = 'Pregunta actual: mostrada';
+      } else {
+        questionBox.innerHTML = '<span class="question-hidden">La pregunta aparecerá aquí cuando presiones “Sacar pregunta”.</span>';
+        currentStatus.textContent = 'Pregunta actual: ninguna';
+      }
+
+      remainingStatus.textContent = `Disponibles: ${available.length}`;
+      usedStatus.textContent = `Usadas: ${used.length}`;
+
+      usedList.innerHTML = '';
+      if (used.length === 0) {
+        emptyUsed.style.display = 'block';
+      } else {
+        emptyUsed.style.display = 'none';
+        used.forEach((q, index) => {
+          const li = document.createElement('li');
+          li.textContent = `${index + 1}. ${q}`;
+          usedList.appendChild(li);
+        });
+      }
+    }
+
+    document.getElementById('drawBtn').addEventListener('click', () => {
+      if (available.length === 0) {
+        questionBox.innerHTML = '<div class="success-text">Ya no quedan preguntas disponibles en esta ronda. Puedes reiniciar o actualizar el orden antes de comenzar otra vez.</div>';
+        currentStatus.textContent = 'Pregunta actual: no hay disponibles';
+        return;
+      }
+
+      currentQuestion = available.shift();
+      used.push(currentQuestion);
+      render();
+    });
+
+    document.getElementById('shuffleBtn').addEventListener('click', () => {
+      shuffleArray(available);
+      currentQuestion = null;
+      render();
+      questionBox.innerHTML = '<div class="success-text">El orden de las preguntas restantes fue actualizado.</div>';
+      currentStatus.textContent = 'Pregunta actual: ninguna';
+    });
+
+    document.getElementById('showCountBtn').addEventListener('click', () => {
+      alert(`Quedan ${available.length} pregunta(s) disponibles y se han usado ${used.length}.`);
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (confirm('¿Deseas reiniciar toda la ronda y volver a incluir todas las preguntas?')) {
+        initialize();
+      }
+    });
+
+    initialize();
+  </script>
+</body>
+</html>
